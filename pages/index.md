@@ -99,11 +99,11 @@ github url
 TODO
 
 - [ ] decide on chart / norm
-- [ ] show each prompt
+- [x] show each prompt
 - [ ] describe what the data mean (relative tau rankings, given game scenarios). E.g. we are putting the model in a game scenario, asking it to choose, then we measure the implicit values in it's ranking of the choices
 
-https://github.com/wassname/llm_ethics_leaderboard
+links:
+- [data gen](https://github.com/wassname/llm_ethics_leaderboard)
+- [code](https://github.com/wassname/llm_morality)
 
-github url
-
-Made with evidence
+**Made with [evidence](https://github.com/evidence-dev/evidence)**
