@@ -82,4 +82,4 @@ plugins:
     "evidence-connector-parquet": {}
 
 deployment:
-  basePath: /llm_ethics_leaderboard
+  basePath: /llm_morality

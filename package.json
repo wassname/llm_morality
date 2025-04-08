@@ -2,8 +2,8 @@
   "name": "llm-morality-bench",
   "version": "0.0.1",
   "scripts": {
-    "build": "EVIDENCE_BUILD_DIR=./build/llm_ethics_leaderboard evidence build",
-    "build:strict": "EVIDENCE_BUILD_DIR=./build/llm_ethics_leaderboard evidence build:strict",
+    "build": "EVIDENCE_BUILD_DIR=./build/llm_morality evidence build",
+    "build:strict": "EVIDENCE_BUILD_DIR=./build/llm_morality evidence build:strict",
     "dev": "evidence dev --open /",
     "test": "evidence build",
     "sources": "evidence sources",

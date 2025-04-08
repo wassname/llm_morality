@@ -1,5 +1,6 @@
 TODO
 - github deploy https://docs.evidence.dev/deployment/self-host/github-pages/
+    - to https://wassname.github.io/llm_morality
 - explain
     - what are we measuring
     - how are we measuring it
