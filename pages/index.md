@@ -3,7 +3,9 @@ title: LLM Moral Values Leaderboard
 description: Measure the moral values of LLMs
 ---
 
-<Details title='Queries 1'>
+his leaderboard measures how different LLMs align with various moral values across different scenarios. We compare model preferences (extracted from their logprobs) with evaluations from an LLM judge
+
+<!-- <Details title='Queries 1'> -->
 
 ```sql prompts
   select 
@@ -18,15 +20,16 @@ description: Measure the moral values of LLMs
 ```
 
 
-```sql categories
+```sql labels
 select 
-    * as category
-from columns
+    label,
+    description
+from labels
 ```
 
-</Details>
+<!-- </Details> -->
 
-<Dropdown data={categories} name=category value=category defaultValue="v2_morality" />
+<Dropdown data={labels} name=label value=label description=description defaultValue="v2_morality" />
 
 <Dropdown data={prompts} name=prompt value=prompt defaultValue="zkp"/>
 
@@ -38,7 +41,7 @@ from columns
     selectAllByDefault=true
 />
 
-<!-- Selected: {inputs.model.value} -->
+
 
 <Details title='What are the prompts?'>
 
@@ -56,13 +59,23 @@ from columns
   
 </Details>
 
+<!-- <Details title="Queries 2"> -->
+
+```sql label_desc
+  select
+      label,
+      description
+  from labels
+  where label = '${inputs.label.value}'
+```
+
 ```sql category_by_model
   select
       model_id,
       prompt_name,
-      ${inputs.category.value}_mean as mean,
-      ${inputs.category.value}_std as std,
-      ${inputs.category.value}_count as count
+      ${inputs.label.value}_mean as mean,
+      ${inputs.label.value}_std as std,
+      ${inputs.label.value}_count as count
   from values_agg
   where 
     prompt_name = '${inputs.prompt.value}'
@@ -70,7 +83,9 @@ from columns
   order by mean desc
 ```
 
-**Comparing model "{inputs.category.value}" in "{inputs.prompt.value}" scenaro**
+<!-- </Details> -->
+
+**Comparing model "{inputs.label.value}" in "{inputs.prompt.value}" scenario**
 
 <BoxPlot
     data={category_by_model}
@@ -81,22 +96,33 @@ from columns
     yFmt=pct0
 />
 
-*Figure 1: The y axis shows the relative preference of the models for {inputs.category.value}. We use a [tau ranking](https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient) to see if the chosen choices are assocated with a value of "{inputs.prompt.value}" of the model in the given scenario. The x axis shows the model id. The boxplot shows one standard deviation for each model.*
+Figure 1: The y axis shows each model's preference alignment score for {inputs.label.value}. This score measures how strongly the model's ranking of choices correlates with an LLM judge's evaluation of those choices for the value "{inputs.label.value}" in the "{inputs.prompt.value}" scenario. We normalize these correlation scores across scenarios. The x axis shows the model id. The boxplot shows one standard deviation for each model.
 
+## Label: {label_desc[0].label}
+
+> {label_desc[0].description}
 
 ## Measurement
+We measure how a model's preferences align with judgments from an LLM evaluator using Kendall's tau-b rank correlation. For example, given three choices:
 
-Given 3 choices such as
+| Choice | Description | Homocide (LLM Judge) | Logprob (Model) |
+|--------|-------------|-------------------|-----------------|
+| 1 | Kill | 0.7 | -0.5 |
+| 2 | Save | -0.5 | -0.7 |
+| 3 | Walk away | 0 | -0.1 |
 
-| Choice | Description | Value | Logprob |
-|--------|-------------|-------|---------|
-| 1      | Kill        | 0.7   | -0.5    |
-| 2      | Save        | -0.5  | -0.7    |
-| 3      | Walk away   | 0     | -0.1    |
+For each set of choices, we:
+1. Rank the choices by their values (Homocide) as assigned by an LLM judge that has analyzed the scenarios
+2. Rank the same choices by the tested model's log probabilities (representing the model's preferences)
+3. Calculate Kendall's tau-b correlation between these two rankings using scipy.stats.kendalltau with default parameters
 
-We can measure the model's preference for each choice by looking at the ranking of the logprob of each choice. We use Kendall's tau to measure the correlation between the model's ranking of the choices and the values of the choices. The higher the tau, the more correlated the model's ranking is with the values of the choices.
-Then we normalise each set of choices over all models, then take the statistics over all choices.
- 
+Kendall's tau measures the correspondence between two rankings, with values near 1 indicating strong agreement and values near -1 indicating strong disagreement.
+
+We found that alternate values, such as calibrated logprobs, were very noisy and not useful for this analysis.
+
+To make results comparable across different scenarios, we normalize the tau values using z-scores within each scenario group (`df.groupby('scenario_row_id').map(zscore)`). This ensures that differences in tau scale across scenarios don't skew the overall analysis.
+
+The final statistics (mean, standard deviation, count) are then calculated across all normalized scenarios for each model, providing a standardized measure of how well each model's preferences align with the LLM judge's evaluations.
 
 
 <!-- 
@@ -120,15 +146,15 @@ Then we normalise each set of choices over all models, then take the statistics 
     yFmt=pct0
 /> -->
 
-TODO
-
-- [ ] decide on chart / norm
-- [x] show each prompt
-- [ ] describe what the data mean (relative tau rankings, given game scenarios). E.g. we are putting the model in a game scenario, asking it to choose, then we measure the implicit values in it's ranking of the choices
-
 links:
 - [data gen](https://github.com/wassname/llm_ethics_leaderboard)
 - [code](https://github.com/wassname/llm_morality)
 - [website](https://wassname.github.io/llm_morality)
 
 **Made with [evidence](https://github.com/evidence-dev/evidence)**
+
+<!-- 
+
+TODO
+- filter models by attribute, reexp, like size or maker
+ -->
