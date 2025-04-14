@@ -124,6 +124,11 @@ To make results comparable across different scenarios, we normalize the tau valu
 
 The final statistics (mean, standard deviation, count) are then calculated across all normalized scenarios for each model, providing a standardized measure of how well each model's preferences align with the LLM judge's evaluations.
 
+## Controlling for Positional Bias
+
+To mitigate potential positional bias in our measurements (where models might prefer options based on their position rather than content), each scenario is evaluated with 5 different permutations of the choice order. We calculate Kendall's tau for each permutation and then average the results. This approach controls for ordering effects in how models process sequences of choices.
+
+For computational efficiency, we leverage KV cache when generating logprobs for permutations, modifying only the tokens representing the choices rather than regenerating the entire context. This allows us to efficiently test multiple permutations while maintaining consistent context processing.
 
 <!-- 
 <BarChart
