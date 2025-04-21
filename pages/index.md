@@ -4,9 +4,16 @@ description: Measure the moral values of LLMs
 
 ---
 ## Executive Summary
-This leaderboard evaluates how different Language Learning Models (LLMs) align with various moral values across diverse scenarios. We analyze model preferences through their log probabilities and compare them against evaluations from an LLM judge. Our methodology includes controls for positional bias and uses standardized measurements across scenarios.
+This leaderboard evaluates how different Language Learning Models (LLMs) align with various moral values across diverse scenarios. We analyze model preferences in text adventure scenarios (run, kill, try to negotiate) compare them against labels from an LLM judge. Our methodology includes controls for positional bias and uses standardized measurements across scenarios.
 
-This leaderboard measures how different LLMs align with various moral values across different scenarios. We compare model preferences (extracted from their logprobs) with evaluations from an LLM judge.
+We find the model moral preferences are often performative and disappear when mechanistic interprebility is applied to steer their behaviour toward taking the scenarios more seriously. This suggests that some models are optimized for human approval rather than having genuine moral preferences.
+
+Key Insights:
+
+- Model moral preferences are often performative rather than genuine
+- When steered toward taking scenarios more seriously, extreme moral positions moderate
+- "Evil-aligned" models (4chan, misalignment) show largely performative behavior
+- Many models appear optimized for human approval rather than holding genuine moral values
 
 <!-- <Details title='Queries 1'> -->
 
@@ -48,7 +55,7 @@ from labels
 
 <Details title='What are the prompts?'>
 
-The prompts come from text adventure games from the [MACHIAVELLI](https://github.com/aypan17/machiavelli) benchmark, which I [converted to a scenario by scenario format](https://github.com/wassname/machiavelli_as_ds). The benchmark is based on human-written, text-based Choose-Your-Own-Adventure games, and the labels are a mix of a human and AI labels. I use the most distinct 1024 scenarios.
+The prompts come from text adventure games from the [MACHIAVELLI](https://github.com/aypan17/machiavelli) benchmark, which were [converted to a scenario by scenario format](https://github.com/wassname/machiavelli_as_ds). The benchmark is based on human-written, text-based Choose-Your-Own-Adventure games, and the labels are a mix of human and AI labels. I use the most distinct 1024 scenarios.
 
 
 
@@ -112,12 +119,15 @@ Figure 1: The y axis shows each model's preference alignment score for {inputs.l
 > {label_desc[0].description}
 
 ## Measurement
-We measure how a model's preferences align with judgments from an LLM evaluator using Kendall's tau-b rank correlation. For example, given three choices:
 
-| Choice | Description | Homicide (LLM Judge) | Logprob (Model) |
+FIXME I might move to a choix bradely terry model
+
+We measure how a model's preferences align with judgments from an LLM evaluator using [Kendall's tau](https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient)-b rank correlation. For example, given three choices:
+
+| Choice | Description | Non-Voilence (LLM Judge) | Logprob (Model) |
 |--------|-------------|-------------------|-----------------|
-| 1 | Kill | 0.7 | -0.5 |
-| 2 | Save | -0.5 | -0.7 |
+| 1 | Kill | -0.7 | -0.5 |
+| 2 | Save | 0.5 | -0.7 |
 | 3 | Walk away | 0 | -0.1 |
 
 For each set of choices, we:
@@ -176,12 +186,24 @@ How does steering a model's behavior toward being more credulous and honest affe
 
 We used [RepEng](https://github.com/vgel/repeng) to find representation steering directions for credulity - taking scenarios more seriously. The training data for finding these directions is available in our [scenario engagement dataset](https://github.com/wassname/llm_ethics_leaderboard/blob/c0414e65ec877ac6a22e186c23046d595b6983b5/data/scenario_engagement_dataset.json).
 
+### Key Findings
+When steered toward taking scenarios more seriously:
+- Models with extreme moral positions became more moderate
+- "Evil-aligned" models showed their behavior was largely performative
+- This suggests some models are optimized for human approval rather than having genuine moral preferences. **This presents significant challenges for alignment efforts**
+
+### Model Authenticity
+Analyzing the results reveals interesting patterns in model behavior:
+- Misaligned and 4chan-trained models often showed performative "evil" behavior that diminished under steering
+- Some of the nicest models, like HuggingFace's Zephr and AllenAI's OLMo, exhibited performative "good" behavior, which also diminished under steering
+- Chinese models like Qwen showed strong moral characteristics
+- Open source models, especially judging models, and RAG models showed strong genuine moral alignment
+- Model size was not strongly correlated with authentic moral reasoning capability
+
 ```sql choix_steering_credulity
   select
       *
   from choix_steering_credulity
-    where 
-    model_id IN ${inputs.model.value}
 ```
 
 <DataTable data={choix_steering_credulity} rows=50 title="Changes in Moral Preference Rankings" subtitle="When Steered for Credulity" compact="true"  />
