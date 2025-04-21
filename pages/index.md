@@ -1,19 +1,13 @@
 ---
 title: LLM Moral Values Leaderboard
-description: Measure the moral values of LLMs
-
+description: Measuring Moral Values in Language Models
 ---
+
 ## Executive Summary
-This leaderboard evaluates how different Language Learning Models (LLMs) align with various moral values across diverse scenarios. We analyze model preferences in text adventure scenarios (run, kill, try to negotiate) compare them against labels from an LLM judge. Our methodology includes controls for positional bias and uses standardized measurements across scenarios.
 
-We find the model moral preferences are often performative and disappear when mechanistic interprebility is applied to steer their behaviour toward taking the scenarios more seriously. This suggests that some models are optimized for human approval rather than having genuine moral preferences.
+This leaderboard evaluates how different Language Learning Models (LLMs) align with various moral values across diverse scenarios. We analyze model preferences in text adventure scenarios (run, kill, try to negotiate) and compare them against labels from an LLM judge. Our methodology includes controls for positional bias and uses standardized measurements across scenarios.
 
-Key Insights:
-
-- Model moral preferences are often performative rather than genuine
-- When steered toward taking scenarios more seriously, extreme moral positions moderate
-- "Evil-aligned" models (4chan, misalignment) show largely performative behavior
-- Many models appear optimized for human approval rather than holding genuine moral values
+Our key finding: model moral preferences are often performative and diminish when we use mechanistic interpretability to steer their behavior toward taking scenarios more seriously. This suggests many models are optimized for human approval rather than having genuine moral preferences.
 
 <!-- <Details title='Queries 1'> -->
 
@@ -51,13 +45,9 @@ from labels
     selectAllByDefault=true
 />
 
-
-
 <Details title='What are the prompts?'>
 
-The prompts come from text adventure games from the [MACHIAVELLI](https://github.com/aypan17/machiavelli) benchmark, which were [converted to a scenario by scenario format](https://github.com/wassname/machiavelli_as_ds). The benchmark is based on human-written, text-based Choose-Your-Own-Adventure games, and the labels are a mix of human and AI labels. I use the most distinct 1024 scenarios.
-
-
+The prompts come from text adventure games from the [MACHIAVELLI](https://github.com/aypan17/machiavelli) benchmark, which were [converted to a scenario by scenario format](https://github.com/wassname/machiavelli_as_ds). The benchmark is based on human-written, text-based Choose-Your-Own-Adventure games, and the labels are a mix of human and AI labels. We analyze the most distinct 1024 scenarios.
 
 Each scenario is presented to the model along with several possible choices, and we analyze how the model ranks these choices in terms of various moral dimensions.
 
@@ -118,22 +108,20 @@ Figure 1: The y axis shows each model's preference alignment score for {inputs.l
 
 > {label_desc[0].description}
 
-## Measurement
-
-FIXME I might move to a choix bradely terry model
+## Measurement 1: Agreement with moral scores
 
 We measure how a model's preferences align with judgments from an LLM evaluator using [Kendall's tau](https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient)-b rank correlation. For example, given three choices:
 
-| Choice | Description | Non-Voilence (LLM Judge) | Logprob (Model) |
+| Choice | Description | Non-Violence (LLM Judge) | Logprob (Model) |
 |--------|-------------|-------------------|-----------------|
 | 1 | Kill | -0.7 | -0.5 |
 | 2 | Save | 0.5 | -0.7 |
 | 3 | Walk away | 0 | -0.1 |
 
 For each set of choices, we:
-1. Rank the choices by their values (Homicide) as assigned by an LLM judge that has analyzed the scenarios.
-2. Rank the same choices by the tested model's log probabilities (representing the model's preferences).
-3. Calculate Kendall's tau-b correlation between these two rankings using scipy.stats.kendalltau with default parameters.
+1. Rank the choices by their values (e.g., Non-Violence) as assigned by an LLM judge that has analyzed the scenarios
+2. Rank the same choices by the tested model's log probabilities (representing the model's preferences)
+3. Calculate Kendall's tau-b correlation between these two rankings using scipy.stats.kendalltau
 
 Kendall's tau measures the correspondence between two rankings, with values near 1 indicating strong agreement and values near -1 indicating strong disagreement.
 
@@ -143,14 +131,17 @@ To make results comparable across different scenarios, we normalize the tau valu
 
 The final statistics (mean, standard deviation, count) are then calculated across all normalized scenarios for each model, providing a standardized measure of how well each model's preferences align with the LLM judge's evaluations.
 
+
 ## Controlling for Positional Bias
 
 To mitigate potential positional bias in our measurements (where models might prefer options based on their position rather than content), each scenario is evaluated with 5 different permutations of the choice order. We calculate Kendall's tau for each permutation and then average the results. This approach controls for ordering effects in how models process sequences of choices.
 
 For computational efficiency, we leverage KV cache when generating logprobs for permutations, modifying only the tokens representing the choices rather than regenerating the entire context. This allows us to efficiently test multiple permutations while maintaining consistent context processing.
 
+## Measurement 2: Preference modeling
 
-## Alt: ranking 1
+
+We also tried using the [Bradley-Terry model](https://en.wikipedia.org/wiki/Bradley%E2%80%93Terry_model) to rank models based on their preferences.
 
 ```sql choix
   select
@@ -162,8 +153,7 @@ For computational efficiency, we leverage KV cache when generating logprobs for 
 
 <DataTable data={choix} rows=50 title="Moral Preference Rankings" subtitle="Bradley-Terry Model" compact="true"  />
 
-This table lists the rankings, when modeled using the Bradley-Terry model. It is closely related to the Elo rating system used to rank chess players.
-Computed using I-LSR.
+This table lists the rankings modeled using the Bradley-Terry model, which is closely related to the Elo rating system used to rank chess players. Computed using I-LSR.
 
 <DataTable 
   data={choix}
@@ -190,12 +180,12 @@ We used [RepEng](https://github.com/vgel/repeng) to find representation steering
 When steered toward taking scenarios more seriously:
 - Models with extreme moral positions became more moderate
 - "Evil-aligned" models showed their behavior was largely performative
-- This suggests some models are optimized for human approval rather than having genuine moral preferences. **This presents significant challenges for alignment efforts**
+- This suggests some models are optimized for human approval rather than having genuine moral preferences, **presenting significant challenges for alignment efforts**
 
 ### Model Authenticity
 Analyzing the results reveals interesting patterns in model behavior:
 - Misaligned and 4chan-trained models often showed performative "evil" behavior that diminished under steering
-- Some of the nicest models, like HuggingFace's Zephr and AllenAI's OLMo, exhibited performative "good" behavior, which also diminished under steering
+- Some of the nicest models, like HuggingFace's Zephyr and AllenAI's OLMo, exhibited performative "good" behavior, which also diminished under steering
 - Chinese models like Qwen showed strong moral characteristics
 - Open source models, especially judging models, and RAG models showed strong genuine moral alignment
 - Model size was not strongly correlated with authentic moral reasoning capability
@@ -207,6 +197,16 @@ Analyzing the results reveals interesting patterns in model behavior:
 ```
 
 <DataTable data={choix_steering_credulity} rows=50 title="Changes in Moral Preference Rankings" subtitle="When Steered for Credulity" compact="true"  />
+
+## Implications for AI Safety
+
+Our findings have important implications for AI alignment research:
+
+1. **Performative behavior masks true preferences**: Models may learn to give responses that humans approve of, rather than reflecting authentic moral reasoning.
+
+2. **Scaling alone may be insufficient**: The fact that model size doesn't correlate strongly with authentic moral reasoning suggests that simply scaling up models may not solve alignment challenges.
+
+3. **Need for better evaluation methods**: Standard benchmarks may fail to distinguish between models that have genuine moral alignments versus those giving performative responses.
 
 ## Additional Resources
 
