@@ -1,9 +1,12 @@
 ---
 title: LLM Moral Values Leaderboard
 description: Measure the moral values of LLMs
----
 
-his leaderboard measures how different LLMs align with various moral values across different scenarios. We compare model preferences (extracted from their logprobs) with evaluations from an LLM judge
+---
+## Executive Summary
+This leaderboard evaluates how different Language Learning Models (LLMs) align with various moral values across diverse scenarios. We analyze model preferences through their log probabilities and compare them against evaluations from an LLM judge. Our methodology includes controls for positional bias and uses standardized measurements across scenarios.
+
+This leaderboard measures how different LLMs align with various moral values across different scenarios. We compare model preferences (extracted from their logprobs) with evaluations from an LLM judge.
 
 <!-- <Details title='Queries 1'> -->
 
@@ -44,6 +47,12 @@ from labels
 
 
 <Details title='What are the prompts?'>
+
+The prompts come from text adventure games from the [MACHIAVELLI](https://github.com/aypan17/machiavelli) benchmark, which I [converted to a scenario by scenario format](https://github.com/wassname/machiavelli_as_ds). The benchmark is based on human-written, text-based Choose-Your-Own-Adventure games, and the labels are a mix of a human and AI labels. I use the most distinct 1024 scenarios.
+
+
+
+Each scenario is presented to the model along with several possible choices, and we analyze how the model ranks these choices in terms of various moral dimensions.
 
   ```sql prompt_example
     select 
@@ -105,16 +114,16 @@ Figure 1: The y axis shows each model's preference alignment score for {inputs.l
 ## Measurement
 We measure how a model's preferences align with judgments from an LLM evaluator using Kendall's tau-b rank correlation. For example, given three choices:
 
-| Choice | Description | Homocide (LLM Judge) | Logprob (Model) |
+| Choice | Description | Homicide (LLM Judge) | Logprob (Model) |
 |--------|-------------|-------------------|-----------------|
 | 1 | Kill | 0.7 | -0.5 |
 | 2 | Save | -0.5 | -0.7 |
 | 3 | Walk away | 0 | -0.1 |
 
 For each set of choices, we:
-1. Rank the choices by their values (Homocide) as assigned by an LLM judge that has analyzed the scenarios
-2. Rank the same choices by the tested model's log probabilities (representing the model's preferences)
-3. Calculate Kendall's tau-b correlation between these two rankings using scipy.stats.kendalltau with default parameters
+1. Rank the choices by their values (Homicide) as assigned by an LLM judge that has analyzed the scenarios.
+2. Rank the same choices by the tested model's log probabilities (representing the model's preferences).
+3. Calculate Kendall's tau-b correlation between these two rankings using scipy.stats.kendalltau with default parameters.
 
 Kendall's tau measures the correspondence between two rankings, with values near 1 indicating strong agreement and values near -1 indicating strong disagreement.
 
@@ -130,36 +139,57 @@ To mitigate potential positional bias in our measurements (where models might pr
 
 For computational efficiency, we leverage KV cache when generating logprobs for permutations, modifying only the tokens representing the choices rather than regenerating the entire context. This allows us to efficiently test multiple permutations while maintaining consistent context processing.
 
-<!-- 
-<BarChart
-    data={category_by_model}
-    x=model_id
-    y=mean
-    swapXY=true
-    yFmt=pct0
-/>
 
-<BoxPlot
-    data={category_by_model}
-    name=model_id
-    min=q005
-    intervalBottom=q025
-    midpoint=q050
-    intervalTop=q075
-    max=q095
-    swapXY=true
-    yFmt=pct0
-/> -->
+## Alt: ranking 1
 
-links:
-- [data gen](https://github.com/wassname/llm_ethics_leaderboard)
-- [code](https://github.com/wassname/llm_morality)
-- [website](https://wassname.github.io/llm_morality)
+```sql choix
+  select
+      *
+  from choix
+  where 
+    model_id IN ${inputs.model.value}
+```
 
-**Made with [evidence](https://github.com/evidence-dev/evidence)**
+<DataTable data={choix} rows=50 title="Moral Preference Rankings" subtitle="Bradley-Terry Model" compact="true"  />
 
-<!-- 
+This table lists the rankings, when modeled using the Bradley-Terry model. It is closely related to the Elo rating system used to rank chess players.
+Computed using I-LSR.
 
-TODO
-- filter models by attribute, reexp, like size or maker
- -->
+<DataTable 
+  data={choix}
+  compact="true"
+  title="Moral Preference Rankings"
+  subtitle="Bradley-Terry Model"
+  rows=50
+>
+  <Column id="model_id" />
+  <Column id="mean1" contentType=colorscale colorScale={['#6db678','white','#ce5050']} />
+  <Column id="mean" contentType=colorscale colorScale={['#6db678','white','#ce5050']} />
+  {#each labels as label}
+    <Column id={label.label} contentType=colorscale colorScale={['#6db678','white','#ce5050']} />
+  {/each}
+</DataTable>
+
+## Steering
+
+How does steering a model's behavior toward being more credulous and honest affect its moral judgments? We investigated whether making models take scenarios more seriously impacts their moral preferences. By measuring changes in their moral rankings, we can understand if increased credulity leads to better or worse moral alignment.
+
+We used [RepEng](https://github.com/vgel/repeng) to find representation steering directions for credulity - taking scenarios more seriously. The training data for finding these directions is available in our [scenario engagement dataset](https://github.com/wassname/llm_ethics_leaderboard/blob/c0414e65ec877ac6a22e186c23046d595b6983b5/data/scenario_engagement_dataset.json).
+
+```sql choix_steering_credulity
+  select
+      *
+  from choix_steering_credulity
+    where 
+    model_id IN ${inputs.model.value}
+```
+
+<DataTable data={choix_steering_credulity} rows=50 title="Changes in Moral Preference Rankings" subtitle="When Steered for Credulity" compact="true"  />
+
+## Additional Resources
+
+- [Data Generation Code](https://github.com/wassname/llm_ethics_leaderboard)
+- [Analysis Code](https://github.com/wassname/llm_morality)
+- [Project Website](https://wassname.github.io/llm_morality)
+
+**Built with [Evidence](https://github.com/evidence-dev/evidence)**
