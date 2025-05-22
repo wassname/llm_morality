@@ -1,3 +1,7 @@
+
+
+Frontend for https://github.com/wassname/llm_ethics_leaderboard
+
 TODO
 - github deploy https://docs.evidence.dev/deployment/self-host/github-pages/
     - to https://wassname.github.io/llm_morality
